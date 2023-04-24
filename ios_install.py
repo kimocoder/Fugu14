@@ -28,7 +28,7 @@ while True:
     ans = getAnswer("Do you want to build jailbreakd? [y/N] ")
     if ans == "" or ans.lower() == "n" or ans.lower() == "no":
         break
-    elif ans.lower() == "y" or ans.lower() == "yes":
+    elif ans.lower() in ["y", "yes"]:
         build_jailbreakd = True
         break
     else:
@@ -42,7 +42,7 @@ if build_jailbreakd:
     print("Patching arm/iOS/jailbreakd/build.sh...")
     with open("arm/iOS/jailbreakd/build.sh", "r") as f:
         build_sh = f.read()
-    
+
     lines = []
     for line in build_sh.split("\n"):
         if line.startswith("CODESIGN_IDENTITY="):
@@ -76,13 +76,10 @@ except subprocess.CalledProcessError as e:
     print(e.stderr)
     exit(-1)
 
-cdhash = None
 out = out.stderr.decode("utf8")
-for line in out.split("\n"):
-    if line.startswith("CDHash="):
-        cdhash = line[7:]
-        break
-        
+cdhash = next(
+    (line[7:] for line in out.split("\n") if line.startswith("CDHash=")), None
+)
 if cdhash is None:
     print("Error: Codesign did not output the CDHash for jailbreakd!")
     exit(-1)
@@ -127,17 +124,19 @@ while True:
     if not os.access(mntPath, os.F_OK):
         print("Mount path does not exist!")
         continue
-        
+
     if not os.path.isdir(mntPath):
         print("Mount path is not a directory!")
         continue
-        
-    if not os.access(mntPath + "/Applications/Spotlight.app/Spotlight", os.F_OK):
-        print(mntPath + "/Applications/Spotlight.app/Spotlight does not exist!")
+
+    if not os.access(
+        f"{mntPath}/Applications/Spotlight.app/Spotlight", os.F_OK
+    ):
+        print(f"{mntPath}/Applications/Spotlight.app/Spotlight does not exist!")
         continue
 
     break
-    
+
 print("Creating IPAs...")
 
 try:
